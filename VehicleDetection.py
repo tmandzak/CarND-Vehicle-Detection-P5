@@ -308,7 +308,7 @@ class VehicleDetection:
     def pipeline(self, img):
         #windows = [((275, 572), (380, 510)), ((488, 563), (549, 518)), ((554, 543), (582, 522)), ((601, 555), (646, 522)), ((657, 545), (685, 517)), ((849, 678), (1135, 512))]
         
-        windows = self.slide_window(img, x_start_stop=[None, None], y_start_stop=[400, None], xy_window=(128, 102), xy_overlap=(0.8, 0.75))
+        windows = self.slide_window(img, x_start_stop=[None, None], y_start_stop=[400, None], xy_window=(128, 128), xy_overlap=(0.5, 0.5))
         
         result = self.draw_boxes(img, windows)
             
