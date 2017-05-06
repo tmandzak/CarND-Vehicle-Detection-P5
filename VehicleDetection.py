@@ -25,6 +25,7 @@ class VehicleDetection:
                  spatial_feat, # Spatial features on or off
                  hist_feat, # Histogram features on or off
                  hog_feat, # HOG features on or off
+                 overlap, # Sliding windows overlap
                  hotmap_threshold, # hotmap threshold
                  x_start_stop, # Min and max in x to search in slide_window()
                  y_start_stop, # Min and max in y to search in slide_window()
@@ -41,6 +42,7 @@ class VehicleDetection:
         self.spatial_feat = spatial_feat
         self.hist_feat = hist_feat
         self.hog_feat = hog_feat
+        self.overlap = overlap
         self.hotmap_threshold = hotmap_threshold
         self.x_start_stop = x_start_stop
         self.y_start_stop = y_start_stop 
@@ -334,17 +336,18 @@ class VehicleDetection:
     def draw_sliding_windows(self):
         image = self.test_images[0][0]
         
-        sizes = [[64, 528], [128, 592], [192, 592], [256, 656]] 
+        sizes = [[64, 600, 464], [128, 500, 592], [192, 400, 656], [256, 300, 656]] 
         
         processed = []
         titles=[]
         
         for item in sizes:
             size = item[0]
-            ystop = item[1]
-            windows = self.slide_window(image, x_start_stop=[400, None], y_start_stop = [400, ystop], xy_window=(size, size), xy_overlap=(0.75, 0.75))
+            xstart = item[1]
+            ystop = item[2]
+            windows = self.slide_window(image, x_start_stop=[xstart, None], y_start_stop = [400, ystop], xy_window=(size, size), xy_overlap=(self.overlap, self.overlap))
             processed.append([self.draw_boxes(image, windows)])
-            titles.append('Window size: '+str(size)+', Overlap: 75%')
+            titles.append('Window size: '+str(size)+', Overlap: '+str(np.int(self.overlap*100))+'%')
    
         self._draw_images(images=processed, titles=titles)
     
@@ -530,26 +533,6 @@ class VehicleDetection:
             return bbox_list    
     
     
-    def draw_detect_cars(self):
-        test_images = self.test_images
-        images_processed = []
-        
-        for image in test_images:
-            draw_image = np.copy(image)
-
-            scale = 2
-            overlap=56/64
-
-            hot_windows = self.detect_cars(image, self.color_space, self.svc, self.X_scaler,  self.x_start_stop, self.y_start_stop, scale,
-                                    overlap, self.orient, self.pix_per_cell, self.cell_per_block, self.spatial_size, self.hist_bins,
-                                    self.spatial_feat, self.hist_feat, self.hog_feat)
-            window_img = self.draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
-            
-            images_processed.append( window_img )
-                
-        self._draw_images(images=self._combinelists(test_images, images_processed), titles=['Input', 'Hot windows']*len(test_images)) 
-        
-        
     def draw_detected_cars(self):
         test_images = self.test_images
         images_processed = []
@@ -559,22 +542,21 @@ class VehicleDetection:
             image = item[0]
             draw_image = np.copy(image)
 
-            scale = 2
-            overlap=56/64
+            scale = 1
+            
 
             hot_windows = self.detect_cars(image, self.color_space, self.svc, self.X_scaler,  self.x_start_stop, self.y_start_stop, scale,
-                                    overlap, self.orient, self.pix_per_cell, self.cell_per_block, self.spatial_size, self.hist_bins,
+                                    self.overlap, self.orient, self.pix_per_cell, self.cell_per_block, self.spatial_size, self.hist_bins,
                                     self.spatial_feat, self.hist_feat, self.hog_feat)
             window_img = self.draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
             images_processed.append( [window_img] )
             
             bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, threshold=self.hotmap_threshold, get_heatmap=True)
             
-            #plt.imshow(heatmap, cmap='hot')
             window_img = heatmap             
             images_processed.append( [window_img, 'hot'] )            
 
-            window_img = self.draw_boxes(draw_image, bboxes, color=(255, 0, 0), thick=6)                    
+            window_img = self.draw_boxes(draw_image, bboxes, color=(0, 255, 0), thick=6)                    
             images_processed.append( [window_img] )           
             
                 
