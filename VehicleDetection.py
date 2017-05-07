@@ -48,6 +48,7 @@ class VehicleDetection:
         self.y_start_stop = y_start_stop 
         self.win_sizes = win_sizes
         self.heatmap_threshold = heatmap_threshold
+        self.prev_hot_windows=[]
         
         # Load test images
         self.test_images = [[cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)] for img in glob.glob(test_images)]
@@ -514,45 +515,46 @@ class VehicleDetection:
 
     # Get the list of bounding boxes and a heat map
     def get_bboxes(self, image, hot_windows, prev_hot_windows=[], threshold=1, get_heatmap=True):
+        if len(hot_windows)>0:
+            
+            # Take into account hot windows from a previous frame
+            if len(prev_hot_windows)>0:
+                hot_windows.append(prev_hot_windows) 
+                threshold *= 2
 
-        # Take into account hot windows from a previous frame
-        if len(prev_hot_windows)>0:
-            hot_windows.append(prev_hot_windows) 
-            threshold *= 2
+            heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
 
-        heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
+            # Iterate through list of bboxes
+            for box in hot_windows:
+                # Add += 1 for all pixels inside each bbox
+                # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+                heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
 
-        # Iterate through list of bboxes
-        for box in hot_windows:
-            # Add += 1 for all pixels inside each bbox
-            # Assuming each "box" takes the form ((x1, y1), (x2, y2))
-            heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+             # Zero out pixels below the threshold
+            heatmap[heatmap <= threshold] = 0
 
-         # Zero out pixels below the threshold
-        heatmap[heatmap <= threshold] = 0
+            # Find final boxes from heatmap using label function
+            labels = label(heatmap)
+            bbox_list = []
 
-        # Find final boxes from heatmap using label function
-        labels = label(heatmap)
-        bbox_list = []
+            # Iterate through all detected cars
+            for car_number in range(1, labels[1]+1):
+                # Find pixels with each car_number label value
+                nonzero = (labels[0] == car_number).nonzero()
+                # Identify x and y values of those pixels
+                nonzeroy = np.array(nonzero[0])
+                nonzerox = np.array(nonzero[1])
+                # Define a bounding box based on min/max x and y
+                bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+                bbox_list.append(bbox)
 
-        # Iterate through all detected cars
-        for car_number in range(1, labels[1]+1):
-            # Find pixels with each car_number label value
-            nonzero = (labels[0] == car_number).nonzero()
-            # Identify x and y values of those pixels
-            nonzeroy = np.array(nonzero[0])
-            nonzerox = np.array(nonzero[1])
-            # Define a bounding box based on min/max x and y
-            bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
-            bbox_list.append(bbox)
-
-        # Return bboxes and a heatmap
-        if get_heatmap:
-            # Visualize the heatmap when displaying    
-            heatmap = np.clip(heatmap, 0, 255)    
-            return bbox_list, heatmap
-        else:
-            return bbox_list    
+            # Return bboxes and a heatmap
+            if get_heatmap:
+                # Visualize the heatmap when displaying    
+                heatmap = np.clip(heatmap, 0, 255)    
+                return bbox_list, heatmap
+            else:
+                return bbox_list    
     
     
     def draw_detected_cars_multiscale(self):
@@ -575,7 +577,7 @@ class VehicleDetection:
             window_img = self.draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
             images_processed.append( [window_img] )
             
-            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, threshold=self.heatmap_threshold, get_heatmap=True)
+            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, prev_hot_windows=[], threshold=self.heatmap_threshold, get_heatmap=True)
             
             window_img = heatmap             
             images_processed.append( [window_img, 'hot'] )            
@@ -586,19 +588,23 @@ class VehicleDetection:
                 
         self._draw_images(images=images_processed, titles=['Hot windows', 'Heat map', 'Bounding boxes']*len(test_images), cols=3)               
     
-    def pipeline(self, img):
-       
+    def pipeline(self, image):
+        draw_image = np.copy(image)
 
-            
-        return 0
-    
-    def draw_test_images_pipeline(self):
-        images_processed = []
+        hot_windows = self.detect_cars_multiscale(image, self.color_space, self.svc, self.X_scaler,
+                                                      self.x_start_stop, self.y_start_stop, self.win_sizes,
+                                                      self.overlap, self.orient, self.pix_per_cell, self.cell_per_block,
+                                                      self.spatial_size, self.hist_bins,
+                                                      self.spatial_feat, self.hist_feat, self.hog_feat)
         
-        for img in self.test_images:
-            images_processed.append( self.pipeline(img) )
-                
-        self._draw_images(images=self._combinelists(self.test_images, images_processed), titles=['Input', 'Processed']*len(self.test_images))        
+        bboxes = self.get_bboxes(image, hot_windows, prev_hot_windows=self.prev_hot_windows, threshold=self.heatmap_threshold, get_heatmap=False)
+        #self.prev_hot_windows = np.copy(hot_windows)
+
+        processed = self.draw_boxes(draw_image, bboxes, color=(0, 255, 0), thick=6)   
+
+        return processed
+    
+
         
     
     
