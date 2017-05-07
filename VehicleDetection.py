@@ -26,9 +26,10 @@ class VehicleDetection:
                  hist_feat, # Histogram features on or off
                  hog_feat, # HOG features on or off
                  overlap, # Sliding windows overlap
-                 hotmap_threshold, # hotmap threshold
                  x_start_stop, # Min and max in x to search in slide_window()
                  y_start_stop, # Min and max in y to search in slide_window()
+                 win_sizes, # Sizes and margins for sliding windows [ [win_size, xstart, ystop], ... ]
+                 heatmap_threshold, # heatmap threshold                 
                  test_images, # Test images
                  train_cars, # Initialize training car images
                  train_notcars): # Initialize training non car images
@@ -43,10 +44,11 @@ class VehicleDetection:
         self.hist_feat = hist_feat
         self.hog_feat = hog_feat
         self.overlap = overlap
-        self.hotmap_threshold = hotmap_threshold
         self.x_start_stop = x_start_stop
         self.y_start_stop = y_start_stop 
-
+        self.win_sizes = win_sizes
+        self.heatmap_threshold = heatmap_threshold
+        
         # Load test images
         self.test_images = [[cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)] for img in glob.glob(test_images)]
         # self.img_size = (self.test_images[0].shape[1], self.test_images[0].shape[0])
@@ -336,18 +338,18 @@ class VehicleDetection:
     def draw_sliding_windows(self):
         image = self.test_images[0][0]
         
-        sizes = [[64, 600, 464], [128, 500, 592], [192, 400, 656], [256, 300, 656]] 
-        
         processed = []
         titles=[]
         
-        for item in sizes:
-            size = item[0]
+        for item in self.win_sizes:
+            win_size = item[0]
             xstart = item[1]
+            xstop = self.x_start_stop[1]
+            ystart = self.y_start_stop[0]
             ystop = item[2]
-            windows = self.slide_window(image, x_start_stop=[xstart, None], y_start_stop = [400, ystop], xy_window=(size, size), xy_overlap=(self.overlap, self.overlap))
+            windows = self.slide_window(image, x_start_stop=[xstart, xstop], y_start_stop = [ystart, ystop], xy_window=(win_size, win_size), xy_overlap=(self.overlap, self.overlap))
             processed.append([self.draw_boxes(image, windows)])
-            titles.append('Window size: '+str(size)+', Overlap: '+str(np.int(self.overlap*100))+'%')
+            titles.append('Window size: '+str(win_size)+', Overlap: '+str(np.int(self.overlap*100))+'%')
    
         self._draw_images(images=processed, titles=titles)
     
@@ -395,11 +397,11 @@ class VehicleDetection:
         # Check the score of the SVC
         print('Test Accuracy of SVC = ', round(self.svc.score(X_test, y_test), 4))
        
-    
+
     # Define a single function that can extract features using hog sub-sampling and make predictions
     def detect_cars(self, img, color_space, svc, X_scaler, 
                   x_start_stop=[None, None], y_start_stop=[None, None],
-                  scale=2, overlap=48/64, orient=9, pix_per_cell=8, cell_per_block=2,
+                  win_size = 128, overlap=48/64, orient=9, pix_per_cell=8, cell_per_block=2,
                   spatial_size=8, hist_bins=32,
                   spatial_feat=True, hist_feat=True, hog_feat=True):
 
@@ -415,7 +417,9 @@ class VehicleDetection:
 
         img_tosearch = img[y_start_stop[0]:y_start_stop[1], x_start_stop[0]:x_start_stop[1], :]
 
-        if scale != 1:
+        scale = win_size / 64
+
+        if win_size != 64:
             imshape = img_tosearch.shape
             img_tosearch = cv2.resize(img_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))
 
@@ -489,8 +493,26 @@ class VehicleDetection:
 
                     hot_windows.append(((xbox_left + x_start_stop[0], ytop_draw + y_start_stop[0]),(xbox_left + win_draw + x_start_stop[0], ytop_draw+win_draw + y_start_stop[0])))
 
-        return hot_windows 
+        return hot_windows
+   
+    # Run detect_cars for a set of windows scales (win_sizes) 
+    def detect_cars_multiscale(self, image, color_space, svc, X_scaler, x_start_stop, y_start_stop, win_sizes,
+                                    overlap, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+                                    spatial_feat, hist_feat, hog_feat):
+        hot_windows = []
+        for win_size_item in win_sizes:
+            # Example: win_size_item = [128, 500, 592]
+            win_size = win_size_item[0]
+            win_x_start_stop = [win_size_item[1], x_start_stop[1]]
+            win_y_start_stop = [y_start_stop[0], win_size_item[2]]
+
+            hot_windows.extend( self.detect_cars(image, color_space, svc, X_scaler, win_x_start_stop, win_y_start_stop, win_size,
+                                    overlap, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+                                    spatial_feat, hist_feat, hog_feat)  )
+        return hot_windows    
     
+
+    # Get the list of bounding boxes and a heat map
     def get_bboxes(self, image, hot_windows, prev_hot_windows=[], threshold=1, get_heatmap=True):
 
         # Take into account hot windows from a previous frame
@@ -533,7 +555,7 @@ class VehicleDetection:
             return bbox_list    
     
     
-    def draw_detected_cars(self):
+    def draw_detected_cars_multiscale(self):
         test_images = self.test_images
         images_processed = []
         
@@ -542,16 +564,18 @@ class VehicleDetection:
             image = item[0]
             draw_image = np.copy(image)
 
-            scale = 1
-            
+            win_size = 64            
 
-            hot_windows = self.detect_cars(image, self.color_space, self.svc, self.X_scaler,  self.x_start_stop, self.y_start_stop, scale,
-                                    self.overlap, self.orient, self.pix_per_cell, self.cell_per_block, self.spatial_size, self.hist_bins,
-                                    self.spatial_feat, self.hist_feat, self.hog_feat)
+            hot_windows = self.detect_cars_multiscale(image, self.color_space, self.svc, self.X_scaler,
+                                                      self.x_start_stop, self.y_start_stop, self.win_sizes,
+                                                      self.overlap, self.orient, self.pix_per_cell, self.cell_per_block,
+                                                      self.spatial_size, self.hist_bins,
+                                                      self.spatial_feat, self.hist_feat, self.hog_feat)
+            
             window_img = self.draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
             images_processed.append( [window_img] )
             
-            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, threshold=self.hotmap_threshold, get_heatmap=True)
+            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, threshold=self.heatmap_threshold, get_heatmap=True)
             
             window_img = heatmap             
             images_processed.append( [window_img, 'hot'] )            
@@ -560,9 +584,7 @@ class VehicleDetection:
             images_processed.append( [window_img] )           
             
                 
-        self._draw_images(images=images_processed, titles=['Hot windows', 'Hot map', 'Bounding boxes']*len(test_images), cols=3)        
-        
-        
+        self._draw_images(images=images_processed, titles=['Hot windows', 'Heat map', 'Bounding boxes']*len(test_images), cols=3)               
     
     def pipeline(self, img):
        
