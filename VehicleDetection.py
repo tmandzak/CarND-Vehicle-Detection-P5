@@ -326,13 +326,15 @@ class VehicleDetection:
         return window_list 
     
     # Define a function to draw bounding boxes
-    def draw_boxes(self, img, bboxes, color=(0, 0, 255), thick=6):
+    def draw_boxes(self, img, bboxes=[], color=(0, 0, 255), thick=6):
         # Make a copy of the image
-        imcopy = np.copy(img)
-        # Iterate through the bounding boxes
-        for bbox in bboxes:
-            # Draw a rectangle given bbox coordinates
-            cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+        imcopy = np.copy(img)        
+        if len(bboxes)>0:
+            # Iterate through the bounding boxes
+            for bbox in bboxes:
+                # Draw a rectangle given bbox coordinates
+                cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+                
         # Return the image copy with boxes drawn
         return imcopy    
     
@@ -514,15 +516,18 @@ class VehicleDetection:
     
 
     # Get the list of bounding boxes and a heat map
-    def get_bboxes(self, image, hot_windows, prev_hot_windows=[], threshold=1, get_heatmap=True):
+    def get_bboxes(self, image, hot_windows=[], prev_hot_windows=[], threshold=1, get_heatmap=True):
+        bbox_list = []
+        heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
+        
         if len(hot_windows)>0:
             
             # Take into account hot windows from a previous frame
             if len(prev_hot_windows)>0:
-                hot_windows.append(prev_hot_windows) 
+                hot_windows.extend(prev_hot_windows) 
                 threshold *= 2
 
-            heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
+            
 
             # Iterate through list of bboxes
             for box in hot_windows:
@@ -548,13 +553,13 @@ class VehicleDetection:
                 bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
                 bbox_list.append(bbox)
 
-            # Return bboxes and a heatmap
-            if get_heatmap:
-                # Visualize the heatmap when displaying    
-                heatmap = np.clip(heatmap, 0, 255)    
-                return bbox_list, heatmap
-            else:
-                return bbox_list    
+        # Return bboxes and a heatmap
+        if get_heatmap == True:
+        # Visualize the heatmap when displaying    
+            heatmap = np.clip(heatmap, 0, 255)    
+            return bbox_list, heatmap
+        else:
+            return bbox_list    
     
     
     def draw_detected_cars_multiscale(self):
