@@ -10,6 +10,7 @@ from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 from skimage.feature import hog
+from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split  # if you are using scikit-learn >= 0.18 then use this:
 #from sklearn.cross_validation import train_test_split  # for scikit-learn version <= 0.17
 from sklearn.model_selection import GridSearchCV
@@ -100,6 +101,9 @@ class VehicleDetection:
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
             elif cspace == 'LUV':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
+            elif cspace == '(L)UV':
+                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)[:,:,0]
+                feature_image = feature_image[:,:,None]
             elif cspace == 'HLS':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
             elif cspace == 'H(LS)':
@@ -381,8 +385,12 @@ class VehicleDetection:
         # Define the labels vector
         y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
         
-        # Split up data into randomized training and test sets
         rand_state = 0 #np.random.randint(0, 100)
+        
+        # Shuffle the data
+        scaled_X, y = shuffle(scaled_X, y, random_state=rand_state)
+        
+        # Split up data into randomized training and test sets
         X_train, X_test, y_train, y_test = train_test_split( scaled_X, y, test_size=0.2, random_state=rand_state)
         
         print('Using:',self.orient,'orientations',self.pix_per_cell, 'pixels per cell and', self.cell_per_block,'cells per block')
@@ -520,14 +528,14 @@ class VehicleDetection:
         bbox_list = []
         heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
         
+        
         if len(hot_windows)>0:
             
             # Take into account hot windows from a previous frame
             if len(prev_hot_windows)>0:
+                hot_windows = hot_windows.copy()
                 hot_windows.extend(prev_hot_windows) 
                 threshold *= 2
-
-            
 
             # Iterate through list of bboxes
             for box in hot_windows:
@@ -603,7 +611,7 @@ class VehicleDetection:
                                                       self.spatial_feat, self.hist_feat, self.hog_feat)
         
         bboxes = self.get_bboxes(image, hot_windows, prev_hot_windows=self.prev_hot_windows, threshold=self.heatmap_threshold, get_heatmap=False)
-        #self.prev_hot_windows = np.copy(hot_windows)
+        self.prev_hot_windows = np.copy(hot_windows)
 
         processed = self.draw_boxes(draw_image, bboxes, color=(0, 255, 0), thick=6)   
 
