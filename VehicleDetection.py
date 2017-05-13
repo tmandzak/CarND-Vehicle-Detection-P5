@@ -234,10 +234,9 @@ class VehicleDetection:
         self._draw_images(images=images_processed, titles=['Input '+cspace, 'HOG']*len(test_images))    
         
     # Define a function to extract features from a single image window
-    def single_img_features(self, img, color_space='RGB', spatial_size=(32, 32),
-                            hist_bins=32, orient=9, 
-                            pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                            spatial_feat=True, hist_feat=True, hog_feat=True):    
+    def single_img_features(self, img, color_space, spatial_size,
+                                hist_bins, orient, pix_per_cell, cell_per_block, 
+                                spatial_feat, hist_feat, hog_feat):    
         #1) Define an empty list to receive features
         img_features = []
         #2) Apply color conversion if other than 'RGB'
@@ -263,10 +262,9 @@ class VehicleDetection:
         return np.concatenate(img_features)
     
      # Define a function to extract features from a list of images using single_img_features
-    def extract_features(self, imgs, color_space='RGB', spatial_size=(32, 32),
-                            hist_bins=32, orient=9, 
-                            pix_per_cell=8, cell_per_block=2,
-                            spatial_feat=True, hist_feat=True, hog_feat=True):
+    def extract_features(self, imgs, color_space, spatial_size,
+                            hist_bins, orient, pix_per_cell, cell_per_block,
+                            spatial_feat, hist_feat, hog_feat):
         # Create a list to append feature vectors to
         features = []
         # Iterate through the list of images
@@ -363,17 +361,17 @@ class VehicleDetection:
     # Train the classifier
     def train(self):
         # Build features      
-        car_features = self.extract_features(self.cars, color_space=self.color_space, 
-                        spatial_size=self.spatial_size, hist_bins=self.hist_bins, 
-                        orient=self.orient, pix_per_cell=self.pix_per_cell, 
-                        cell_per_block=self.cell_per_block, spatial_feat=self.spatial_feat, 
-                        hist_feat=self.hist_feat, hog_feat=self.hog_feat)
+        car_features = self.extract_features(self.cars, self.color_space, 
+                        self.spatial_size, self.hist_bins, 
+                        self.orient, self.pix_per_cell, 
+                        self.cell_per_block, self.spatial_feat, 
+                        self.hist_feat, self.hog_feat)
               
-        notcar_features = self.extract_features(self.notcars, color_space=self.color_space, 
-                        spatial_size=self.spatial_size, hist_bins=self.hist_bins, 
-                        orient=self.orient, pix_per_cell=self.pix_per_cell, 
-                        cell_per_block=self.cell_per_block, spatial_feat=self.spatial_feat, 
-                        hist_feat=self.hist_feat, hog_feat=self.hog_feat)  
+        notcar_features = self.extract_features(self.notcars, self.color_space, 
+                        self.spatial_size, self.hist_bins, 
+                        self.orient, self.pix_per_cell, 
+                        self.cell_per_block, self.spatial_feat, 
+                        self.hist_feat, self.hog_feat)  
         
         X = np.vstack((car_features, notcar_features)).astype(np.float64)  
         
@@ -411,10 +409,10 @@ class VehicleDetection:
 
     # Define a single function that can extract features using hog sub-sampling and make predictions
     def detect_cars(self, img, color_space, svc, X_scaler, 
-                  x_start_stop=[None, None], y_start_stop=[None, None],
-                  win_size = 128, overlap=48/64, orient=9, pix_per_cell=8, cell_per_block=2,
-                  spatial_size=8, hist_bins=32,
-                  spatial_feat=True, hist_feat=True, hog_feat=True):
+                  x_start_stop, y_start_stop,
+                  win_size, overlap, orient, pix_per_cell, cell_per_block,
+                  spatial_size, hist_bins,
+                  spatial_feat, hist_feat, hog_feat):
 
         # If x and/or y start/stop positions not defined, set to image size
         if x_start_stop[0] == None:
@@ -493,7 +491,7 @@ class VehicleDetection:
                 #all_features = [spatial_features, hist_features, hog_features]    
 
                 # Scale features and make a prediction
-                test_features = X_scaler.transform(np.array(np.concatenate(all_features)).reshape(1, -1))
+                test_features = X_scaler.transform(np.array(np.concatenate(all_features), dtype=np.float64).reshape(1, -1))
 
                 test_prediction = svc.predict(test_features)
 
