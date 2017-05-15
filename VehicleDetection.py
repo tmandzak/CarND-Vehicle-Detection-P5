@@ -1,5 +1,6 @@
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import cv2
 import glob
@@ -17,23 +18,50 @@ from sklearn.model_selection import GridSearchCV
 from scipy.ndimage.measurements import label
 
 class VehicleDetection:
-    def __init__(self, color_space, # Color space base for features
-                 spatial_size, # Spatial binning dimensions
-                 hist_bins, # Number of histogram bins
-                 orient, # HOG orientations
-                 pix_per_cell, # HOG pixels per cell
-                 cell_per_block, # HOG cells per block
-                 spatial_feat, # Spatial features on or off
-                 hist_feat, # Histogram features on or off
-                 hog_feat, # HOG features on or off
-                 overlap, # Sliding windows overlap
-                 x_start_stop, # Min and max in x to search in slide_window()
-                 y_start_stop, # Min and max in y to search in slide_window()
-                 win_sizes, # Sizes and margins for sliding windows [ [win_size, xstart, ystop], ... ]
-                 heatmap_threshold, # heatmap threshold                 
-                 test_images, # Test images
-                 train_cars, # Initialize training car images
-                 train_notcars): # Initialize training non car images
+    def __init__(self, 
+#                 color_space, # Color space base for features
+#                 spatial_size, # Spatial binning dimensions
+#                 hist_bins, # Number of histogram bins
+#                 orient, # HOG orientations
+#                 pix_per_cell, # HOG pixels per cell
+#                 cell_per_block, # HOG cells per block
+#                 spatial_feat, # Spatial features on or off
+#                 hist_feat, # Histogram features on or off
+#                 hog_feat, # HOG features on or off
+#                 overlap, # Sliding windows overlap
+#                 x_start_stop, # Min and max in x to search in slide_window()
+#                 y_start_stop, # Min and max in y to search in slide_window()
+#                 win_sizes, # Sizes and margins for sliding windows [ [win_size, xstart, ystop], ... ]
+#                 heatmap_threshold, # heatmap threshold                 
+#                 test_images, # Test images
+#                 train_cars, # Initialize training car images
+#                 train_notcars
+                                    color_space = 'YCrCb', # Color space base for features
+                                    spatial_size = (8, 8), # Spatial binning dimensions
+                                    hist_bins = 32,    # Number of histogram bins
+                                    orient = 9,  # HOG orientations
+                                    pix_per_cell = 8, # HOG pixels per cell
+                                    cell_per_block = 2, # HOG cells per block
+                                    spatial_feat = False, # Spatial features on or off
+                                    hist_feat = False, # Histogram features on or off
+                                    hog_feat = True, # HOG features on or off
+                                    overlap = 48/64, # Sliding windows overlap
+                                    x_start_stop= [400, None], # Min and max in x to search in slide_window()
+                                    y_start_stop = [399, 656], # Min and max in y to search in slide_window()
+                                    win_sizes = # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
+                                                 [[96, 607, 544],
+                                                 [128, 543, 592], 
+                                                 [160, 480, 679], 
+                                                 [192, 463, 688]], # ,   [256, 319, 719]], 
+                                    heatmap_threshold = 3, # hotmap threshold
+                                    test_images = 'test_images/*.jpg', # Test images
+                                    train_cars = '../images/vehicles_smallset/**/*.jpeg', # Initialize training cars images
+                                    train_notcars = '../images/non-vehicles_smallset/**/*.jpeg' # Initialize training non cars images       
+                
+                                         
+                 
+                 ):
+                 
         
         self.color_space = color_space 
         self.spatial_size = spatial_size
@@ -99,6 +127,12 @@ class VehicleDetection:
         if cspace != 'RGB':
             if cspace == 'HSV':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+            elif cspace == 'H(S)V':
+                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)[:,:,1] 
+                feature_image = feature_image[:,:,None]                
+            elif cspace == '(R)GB':
+                feature_image = np.copy(image)[:,:,0]
+                feature_image = feature_image[:,:,None]
             elif cspace == 'LUV':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
             elif cspace == '(L)UV':
@@ -116,8 +150,13 @@ class VehicleDetection:
                 feature_image = feature_image[:,:,None]
             elif cspace == 'YUV':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+            elif cspace == '(Y)UV':
+                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)[:,:,0]
+                feature_image = feature_image[:,:,None]                
             elif cspace == 'YCrCb':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)  
+            elif cspace == 'Y(CrCb)':
+                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)[:,:,1:]                 
             elif cspace == '(Y)CrCb':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)[:,:,0]
                 feature_image = feature_image[:,:,None]
@@ -138,6 +177,7 @@ class VehicleDetection:
         images_processed = []
                     
         for img in test_images:
+            img = img[0]
             images_processed.append( [img] )
             for cs in color_spaces:
                 res = self.convert_color(img, cspace=cs)
@@ -149,7 +189,18 @@ class VehicleDetection:
                 
         self._draw_images(images=images_processed, titles=(['Input']+color_spaces)*len(test_images), cols=len(color_spaces)+1)    
  
-    def draw_plot3d(self, pixels, colors_rgb, axis_labels=list("RGB"), axis_limits=[(0, 255), (0, 255), (0, 255)]):
+    def draw_plot3d(self, img, axis_labels=list("Yrb"), axis_limits=[(0, 255), (0, 255), (0, 255)]):
+        
+        # Select a small fraction of pixels to plot by subsampling it
+        scale = max(img.shape[0], img.shape[1], 64) / 64  # at most 64 rows and columns
+        img_small = cv2.resize(img, (np.int(img.shape[1] / scale), np.int(img.shape[0] / scale)), interpolation=cv2.INTER_NEAREST)
+
+        # Convert subsampled image to desired color space(s)
+        pixels = cv2.cvtColor(img_small, cv2.COLOR_RGB2YCrCb)
+
+        colors_rgb = img_small / 255.  # scaled to [0, 1], only for plotting
+       
+        
         """Plot pixels in 3D."""
 
         # Create figure and 3D axes
