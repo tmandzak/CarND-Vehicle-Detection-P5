@@ -39,8 +39,8 @@ class VehicleDetection:
                                     color_space = 'YCrCb', # Color space base for features
                                     spatial_size = (8, 8), # Spatial binning dimensions
                                     hist_bins = 32,    # Number of histogram bins
-                                    orient = 9,  # HOG orientations
-                                    pix_per_cell = 8, # HOG pixels per cell
+                                    orient = 11,  # HOG orientations
+                                    pix_per_cell = 16, # HOG pixels per cell
                                     cell_per_block = 2, # HOG cells per block
                                     spatial_feat = False, # Spatial features on or off
                                     hist_feat = False, # Histogram features on or off
@@ -235,23 +235,23 @@ class VehicleDetection:
         return features    
     
     # Define a function to compute color histogram features  
-    def color_hist(self, img, nbins=32, bins_range=(0, 256)):
+    def color_hist(self, img, nbins=32):
         # Compute the histogram of the color channels separately
-        hist_features = np.histogram(img[:,:,0], bins=nbins, range=bins_range)[0]
+        hist_features = np.histogram(img[:,:,0], bins=nbins)[0]
         for i in range(1, img.shape[2]):
             # Concatenate the histograms into a single feature vector
-            hist_features = np.concatenate((hist_features, np.histogram(img[:,:,i], bins=nbins, range=bins_range)[0]))
+            hist_features = np.concatenate((hist_features, np.histogram(img[:,:,i], bins=nbins)[0]))
         # Return the feature vector
         return hist_features    
     
-    # Define a function to return HOG features and visualization
-    def get_hog_features(self, img, orient, pix_per_cell, cell_per_block, ravel=True, feature_vector = True, transform_sqrt=True):
+    # Define a function to return HOG features only
+    def get_hog_features(self, img, orient, pix_per_cell, cell_per_block, ravel=True, feature_vector = True):
         hog_features = []
         for channel in range(img.shape[2]):
             features = hog(img[:,:,channel], orientations=orient, 
                                   pixels_per_cell=(pix_per_cell, pix_per_cell),
                                   cells_per_block=(cell_per_block, cell_per_block), 
-                                  transform_sqrt=transform_sqrt, block_norm='L2-Hys',
+                                  transform_sqrt=False, block_norm='L2-Hys',
                                   visualise=False, feature_vector=feature_vector)
             hog_features.append( features )
 
@@ -265,7 +265,7 @@ class VehicleDetection:
         features, hog_image = hog(img, orientations=orient, 
                                   pixels_per_cell=(pix_per_cell, pix_per_cell),
                                   cells_per_block=(cell_per_block, cell_per_block), 
-                                  transform_sqrt=True, block_norm='L2-Hys',
+                                  transform_sqrt=False, block_norm='L2-Hys',
                                   visualise=True, feature_vector=True)
         return features, hog_image        
 
@@ -305,14 +305,14 @@ class VehicleDetection:
             img_features.append(hist_features)
         #7) Compute HOG features if flag is set
         if hog_feat == True:
-            hog_features = self.get_hog_features(feature_image, orient, pix_per_cell, cell_per_block, transform_sqrt=True)
+            hog_features = self.get_hog_features(feature_image, orient, pix_per_cell, cell_per_block)
             #8) Append features to list
             img_features.append(hog_features)
 
         #9) Return concatenated array of features
         return np.concatenate(img_features)
     
-     # Define a function to extract features from a list of images using single_img_features
+     # Define a function to extract features from a list of images reusing code of single_img_features
     def extract_features(self, imgs, color_space, spatial_size,
                             hist_bins, orient, pix_per_cell, cell_per_block,
                             spatial_feat, hist_feat, hog_feat):
@@ -476,6 +476,9 @@ class VehicleDetection:
             y_start_stop[1] = img.shape[0]
 
         img_tosearch = img[y_start_stop[0]:y_start_stop[1], x_start_stop[0]:x_start_stop[1], :]
+        
+        # Convert to specified color space
+        img_tosearch = self.convert_color(img_tosearch, cspace = color_space)
 
         scale = win_size / 64
 
@@ -498,12 +501,11 @@ class VehicleDetection:
         nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
         nysteps = (nyblocks - nblocks_per_window) // cells_per_step
 
-        # Convert to specified color space
-        img_tosearch = self.convert_color(img_tosearch, cspace = color_space)
+
 
         if hog_feat:
             # Compute HOG features for the entire image
-            hog_features_entire = self.get_hog_features(img_tosearch, orient, pix_per_cell, cell_per_block, ravel=False, feature_vector=False, transform_sqrt=True)
+            hog_features_entire = self.get_hog_features(img_tosearch, orient, pix_per_cell, cell_per_block, ravel=False, feature_vector=False)
 
         # Create an empty list to receive positive detection windows
         hot_windows = []
