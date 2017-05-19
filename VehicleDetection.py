@@ -15,7 +15,6 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split  # if you are using scikit-learn >= 0.18 then use this:
 #from sklearn.cross_validation import train_test_split  # for scikit-learn version <= 0.17
 from sklearn.model_selection import GridSearchCV
-import sklearn.metrics as skm
 from scipy.ndimage.measurements import label
 
 class VehicleDetection:
@@ -456,11 +455,7 @@ class VehicleDetection:
         print(round(t2-t, 2), 'Seconds to train SVC...')
         
         # Check the score of the SVC
-        print('Accuracy = ', round(self.svc.score(X_test, y_test), 4))
-        
-        y_pred = self.svc.predict(X_test)
-        print("Precision = {:.3f}".format(skm.precision_score(y_pred, y_test, average="macro")))
-        print("Recall = {:.3f}".format(skm.recall_score(y_pred, y_test, average="macro")))
+        print('Test Accuracy of SVC = ', round(self.svc.score(X_test, y_test), 4))
        
 
     # Define a single function that can extract features using hog sub-sampling and make predictions
