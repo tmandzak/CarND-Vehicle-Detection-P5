@@ -37,17 +37,17 @@ class VehicleDetection:
 #                 train_cars, # Initialize training car images
 #                 train_notcars
                                     color_space = 'YCrCb', # Color space base for features
-                                    spatial_size = (8, 8), # Spatial binning dimensions
+                                    spatial_size = (32, 32), # Spatial binning dimensions
                                     hist_bins = 32,    # Number of histogram bins
-                                    orient = 11,  # HOG orientations
-                                    pix_per_cell = 16, # HOG pixels per cell
+                                    orient = 9,  # HOG orientations
+                                    pix_per_cell = 8, # HOG pixels per cell
                                     cell_per_block = 2, # HOG cells per block
-                                    spatial_feat = False, # Spatial features on or off
-                                    hist_feat = False, # Histogram features on or off
+                                    spatial_feat = True, # Spatial features on or off
+                                    hist_feat = True, # Histogram features on or off
                                     hog_feat = True, # HOG features on or off
-                                    overlap = 48/64, # Sliding windows overlap
+                                    overlap = 32/64, # Sliding windows overlap
                                     x_start_stop= [400, None], # Min and max in x to search in slide_window()
-                                    y_start_stop = [399, 656], # Min and max in y to search in slide_window()
+                                    y_start_stop = [400, 656], # Min and max in y to search in slide_window()
                                     win_sizes = # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
                                                  [[96, 607, 544],
                                                  [128, 543, 592], 
@@ -440,7 +440,7 @@ class VehicleDetection:
         scaled_X, y = shuffle(scaled_X, y, random_state=rand_state)
         
         # Split up data into randomized training and test sets
-        X_train, X_test, y_train, y_test = train_test_split( scaled_X, y, test_size=0.2, random_state=rand_state)
+        X_train, X_test, y_train, y_test = train_test_split( scaled_X, y, test_size=0.1, random_state=rand_state)
         
         print('Using:',self.orient,'orientations',self.pix_per_cell, 'pixels per cell and', self.cell_per_block,'cells per block')
         print('Feature vector length:', len(X_train[0]))
@@ -538,6 +538,7 @@ class VehicleDetection:
                     hog_features = []
                     for i in range(img_tosearch.shape[2]):
                         hog_features.append(hog_features_entire[i][ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel())
+                        
                     hog_features = np.hstack(tuple(hog_features))
                     all_features.append(hog_features)
 
