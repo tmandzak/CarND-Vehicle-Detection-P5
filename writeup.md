@@ -20,7 +20,8 @@ The goals / steps of this project are the following:
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
-The whole solution is implemented in a form of a class `VehicleDetection` defined in the file `VehicleDetection.py` and an IPython notebook `P5_Mandzak.ipynb` responsible for instantiating the class, run the pipline and draw illustrations by calling corresponding methods. Names of methods responsible for drawing start with `draw_`. All input paramenters of the pipeline are passed to constructor, parameters used for the final result are specified as default values of constructor's paramenters.
+
+The whole solution is implemented in a form of a class `VehicleDetection` defined in the file `VehicleDetection.py` and an IPython notebook `P5_Mandzak.ipynb` responsible for instantiating the class, running the pipline, drawing illustrations and generating video output mostly by calling corresponding methods. Names of methods responsible for drawing start with `draw_`. All input paramenters of the pipeline are passed to constructor, parameters used for the final result are specified as default values of constructor's paramenters. All lines of code referenced below correspond to `VehicleDetection.py` and cell numbers to `P5_Mandzak.ipynb`.
 
 ### Writeup / README
 
@@ -33,7 +34,10 @@ You're reading it!
 #### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
  
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in `get_hog_features()` method (**lines 232 - 245**). The method is implemented in such a way
+that number of returned HOG layers corresponds the number of input image layers.
+When `ravel` parameter of the method equals `True` HOG features will be returned as a single vector, otherwise as a list of vectors per each of the layers.
+`get_hog_features()` method is called in **line 292** of a `single_img_features()` method  responsible for extracting features from a single image (**lines 272 - 297**). Before an image is passed to `get_hog_features()` method it's converted to a specified color space by `convert_color()` method (**line 278**) defined in **lines 109 - 154**
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
 
