@@ -120,14 +120,31 @@ Data scaling, suffling and train / test splitting take place in **lines 424 - 43
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
+Sliding Window Search is implemented in a ```detect_cars()``` method (**lines 457 - 554**) that is kind of a hybrid of ```windows_search()``` and ```find_cars()``` methods from the lessons. ```detect_cars()``` is as flexible as ```windows_search()``` and reuses HOG features through scaling the whole image as ```find_cars()``` does.
+I decided to use three sizes of windows: 64, 92 and 128, where smaller windows are used for detection of more distant cars.
+Such a multiscale windows search is implemented in a ```detect_cars_multiscale()``` (**lines 557 - 570**) by calling ```detect_cars()``` 
+method for each windows size.
+
+Windows sizes, areas to be occupied by windows as well as overlapping are defined by these parameters of the counstructor (**lines 32 - 37**):
+```
+overlap = 48/64, # Sliding windows overlap
+x_start_stop= [400, None], # Min and max in x to search in slide_window()
+y_start_stop = [400, 656], # Min and max in y to search in slide_window()
+win_sizes = [[64, 500, 512],
+             [96, 500, 568],
+             [128, 400, 656]], # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
+```
+
+Windows of mentioned scales defined above are shown on the image below:
 
 ![alt text][image2]
-![alt text][image3]
+
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
 Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+
+![alt text][image3]
 
 ![alt text][image4]
 ---
