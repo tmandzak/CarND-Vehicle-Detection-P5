@@ -59,10 +59,13 @@ hist_bins = 32    # Number of histogram bins
 | HLS |	0.9769 |	8460 |
 | YUV |	0.9876 |	8460 |
 | YCrCb |	0.9904 |	8460 |
-| H(LS) |	0.9645 |	5640 |
-| H(S)V |	0.9398 |	2820 |
-| (L)UV |	0.9437 |	2820 |
+| H(LS)* |	0.9645 |	5640 |
+| H(S)V* |	0.9398 |	2820 |
+| (L)UV* |	0.9437 |	2820 |
 
+\*H(LS) means L and S layers of HLS, H(S)V means S layer of HSV and so on.
+
+Since YCrCb let achieve the highest accuracy I've chosen it for image conversions before features extraction.
 
 
 
