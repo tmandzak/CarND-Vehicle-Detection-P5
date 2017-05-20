@@ -67,6 +67,22 @@ hist_bins = 32    # Number of histogram bins
 
 Since YCrCb let achieve the highest accuracy I've chosen it for image conversion and the next step was to tweak input parameters just mentioned based on the same approach:
 
+| #	| pix_per_cell	| cell_per_block	| orient	| spatial_size	| hist_bins	| Accuracy | # of Features |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1	| 8	| 2	| 9	| 32	| 32	| 0.9904	| 8460 |
+| 2	| 16	| 2	| 9	| 32	| 32	| 0.9887	| 4140 |
+| 3	| 8	| 3	| 9	| 32	| 32	| 0.9916	| 11916 |
+| 4	| 8	| 2	| 8	| 32	| 32	| 0.9932	| 7872 |
+| 5	| 8	| 2	| 7	| 32	| 32	| 0.991	| 7284 |
+| 6	| 8	| 2	| 10	| 32	| 32	| 0.9887	| 9048 |
+| 7	| 16	| 2	| 8	| 32	| 32	| 0.9882	| 4032 |
+| 8	| 16	| 2	| 10	| 32	| 32	| 0.987	| 4248 |
+| 9	| 16	| 2	| 9	| 16	| 32	| 0.9876	| 1836 |
+| 10	| 16	| 2	| 9	| 8	| 32	| 0.9859	| 1260 |
+| 11	| 16	| 2	| 9	| 8	| 16	| 0.9831	| 1212 |
+
+
+
 
 
 
