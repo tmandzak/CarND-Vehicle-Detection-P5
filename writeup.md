@@ -131,7 +131,7 @@ win_sizes = [[64, 500, 512],
              [128, 400, 656]], # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
 ```
 
-Windows of mentioned scales defined above are shown on the image below. Scales and overlaps were tweaked to get good final video output.
+Windows of mentioned scales defined above are shown on the image below. Scales and overlaps were tweaked to get reasonably well final video output.
 
 ![alt text][image2]
 
@@ -155,10 +155,10 @@ Here's a [link to my video result](./project_video_output.mp4)
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video (**line 660**).  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions (method ```get_bboxes()``` **lines 574 - 623**, called in **line 666** ).  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap (** lines 602 - 615** 
+I recorded the positions of positive detections in each frame of the video (**line 660**).  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions (method ```get_bboxes()``` **lines 574 - 623**, called in **line 666** ).  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap (**lines 602 - 615** 
 og ```get_bboxes()```).  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected (**lines 618 - 623**).  
-
-An example result showing the heatmap from a series of frames of video plese find on the last image.
+In order to filter out false positives that doesn't come from frame to frame, a history of 5 frames positive detections using queue 
+was implemented (**see 584 - 591, 668 - 674**).
 
 ---
 
@@ -166,5 +166,6 @@ An example result showing the heatmap from a series of frames of video plese fin
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+The bounding boxes are still shaking and some false positives still show up. Looks like cars entering or exiting the frame 
+may need some special treatment. The pipeline will likely fail on other recordings when horizon y-coordinate will be different and because of hardcoded sliding windows parameters. Averaging of boundary boxes detected across the time most probably has to be implemented to avoif shakes.
 
