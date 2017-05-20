@@ -81,7 +81,18 @@ Since YCrCb let achieve the highest accuracy I've chosen it for image conversion
 | 10	| 16	| 2	| 9	| 8	| 32	| 0.9859	| 1260 |
 | 11	| 16	| 2	| 9	| 8	| 16	| 0.9831	| 1212 |
 
+As it can be seen from experiments 1 and 10 increasing `pix_per_cell` to 16 and decreasing `spatial_size` to 8 let us reduce length of the feature vector from 8460 to 1260, while the accuracy only reduced from 0.9904 to 0.9859.
 
+Finally set of input parameters looks like below (see **lines 23 - 28**):
+
+```
+color_space = 'YCrCb', # Color space base for features
+spatial_size = (8, 8), # Spatial binning dimensions
+hist_bins = 32,    # Number of histogram bins
+orient = 9,  # HOG orientations
+pix_per_cell = 16, # HOG pixels per cell
+cell_per_block = 2, # HOG cells per block
+ ```
 
 
 
