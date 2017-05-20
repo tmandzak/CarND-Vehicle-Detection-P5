@@ -109,11 +109,11 @@ spatial_feat = True, # Spatial features on or off
 hist_feat = True, # Histogram features on or off
 hog_feat = True # HOG features on or off
 ```
-Lines **409 - 419** are responsible for feature extraction by calling the ```extract_features()``` method defined in lines **300 - 318**. This method was refactored to reuse code of ```single_img_features()``` (**lines 272 - 297**). In order to overcome PNG / JPEG scaling issue, folowing line of code was used to always read images in 0..255 scale (**line 309**):
+Lines **409 - 421** are responsible for feature extraction by calling the ```extract_features()``` method defined in lines **300 - 318**. This method was refactored to reuse code of ```single_img_features()``` (**lines 272 - 297**). In order to overcome PNG / JPEG scaling issue, folowing line of code was used to always read images in 0..255 scale (**line 309**):
 ```
 image = cv2.cvtColor(cv2.imread(file), cv2.COLOR_BGR2RGB)
 ```
-
+Data scaling, suffling and train / test splitting take place in **lines 424 - 437**.
 
 
 ### Sliding Window Search
