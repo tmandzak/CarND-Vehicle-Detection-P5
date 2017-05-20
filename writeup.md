@@ -135,23 +135,25 @@ win_sizes = [[64, 500, 512],
              [128, 400, 656]], # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
 ```
 
-Windows of mentioned scales defined above are shown on the image below:
+Windows of mentioned scales defined above are shown on the image below. Scales and overlaps were tweaked to get good final video output.
 
 ![alt text][image2]
 
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+Ultimately I searched on three scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
 
 ![alt text][image3]
 
-![alt text][image4]
+As mentioned above in order to optimize performance of the classifier, I've used YCrCb colospace, increased ```pix_per_cell``` parameter to 16 and decreased ```spatial_size``` to 8, spatial, histogram and HOG features were used together.
+
 ---
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
+The video was generated in **cell 8** using ```pipeline()``` method defined in **lines 657 - 678**
 Here's a [link to my video result](./project_video_output.mp4)
 
 
