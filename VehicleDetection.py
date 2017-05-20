@@ -2,6 +2,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import queue
 import cv2
 import glob
 import time
@@ -45,7 +46,7 @@ class VehicleDetection:
                                     spatial_feat = True, # Spatial features on or off
                                     hist_feat = True, # Histogram features on or off
                                     hog_feat = True, # HOG features on or off
-                                    overlap = 32/64, # Sliding windows overlap
+                                    overlap = 48/64, # Sliding windows overlap
                                     x_start_stop= [400, None], # Min and max in x to search in slide_window()
                                     y_start_stop = [400, 656], # Min and max in y to search in slide_window()
                                     win_sizes = # Sizes and margins for sliding windows [[win_size, xstart, ystop], ...]
@@ -57,9 +58,6 @@ class VehicleDetection:
                                     test_images = 'test_images/*.jpg', # Test images
                                     train_cars = '../images/vehicles_smallset/**/*.jpeg', # Initialize training cars images
                                     train_notcars = '../images/non-vehicles_smallset/**/*.jpeg' # Initialize training non cars images       
-                
-                                         
-                 
                  ):
                  
         
@@ -77,7 +75,7 @@ class VehicleDetection:
         self.y_start_stop = y_start_stop 
         self.win_sizes = win_sizes
         self.heatmap_threshold = heatmap_threshold
-        self.prev_hot_windows=[]
+        self.detection_history = queue.Queue(5)
         
         # Load test images
         self.test_images = [[cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)] for img in glob.glob(test_images)]
@@ -86,6 +84,9 @@ class VehicleDetection:
         # Initialize training images
         self.cars = glob.glob(train_cars, recursive=True)
         self.notcars = glob.glob(train_notcars, recursive=True)
+        
+        print("Number of car images: ",len(self.cars))
+        print("Number of non car images: ",len(self.notcars))
         
         
     def _draw_images(self, images, titles=[], n=None, cols=2, show_axis='on', cmap='Greys_r'):
@@ -411,6 +412,16 @@ class VehicleDetection:
     
     # Train the classifier
     def train(self):
+        print('Using:')
+        print('Color space = ', self.color_space)
+        if self.spatial_feat:
+            print('Spatial size = ', self.spatial_size)
+        if self.hist_feat:
+            print('Histogram bins = ', self.hist_bins)
+        if self.hog_feat:    
+            print(self.orient,'orientations',self.pix_per_cell, 'pixels per cell and', self.cell_per_block,'cells per block')
+        
+        t=time.time()
         # Build features      
         car_features = self.extract_features(self.cars, self.color_space, 
                         self.spatial_size, self.hist_bins, 
@@ -441,9 +452,10 @@ class VehicleDetection:
         
         # Split up data into randomized training and test sets
         X_train, X_test, y_train, y_test = train_test_split( scaled_X, y, test_size=0.1, random_state=rand_state)
+        t2 = time.time()
         
-        print('Using:',self.orient,'orientations',self.pix_per_cell, 'pixels per cell and', self.cell_per_block,'cells per block')
         print('Feature vector length:', len(X_train[0]))
+        print(round(t2-t, 2), 'Seconds to build features...')
         
         # Use a linear SVC 
         self.svc = LinearSVC()
@@ -576,19 +588,25 @@ class VehicleDetection:
     
 
     # Get the list of bounding boxes and a heat map
-    def get_bboxes(self, image, hot_windows=[], prev_hot_windows=[], threshold=1, get_heatmap=True):
+    def get_bboxes(self, image, hot_windows=[], threshold=1, get_heatmap=True):
         bbox_list = []
         heatmap = np.zeros_like(image[:,:,0]).astype(np.float)
         
-        
-        if len(hot_windows)>0:
+        # If hot windows initiated or detection history not empty
+        if (len(hot_windows)>0) or (not self.detection_history.empty()):
             
-            # Take into account hot windows from a previous frame
-            if len(prev_hot_windows)>0:
+            if len(hot_windows) == 0:
+                threshold = 0
+            
+            # Take into account detections from previous frames
+            if not self.detection_history.empty():
                 hot_windows = hot_windows.copy()
-                hot_windows.extend(prev_hot_windows) 
-                threshold *= 2
-
+                
+                for frame in list(self.detection_history.queue):
+                    hot_windows.extend(frame) 
+                    
+                threshold += self.detection_history.qsize()
+            
             # Iterate through list of bboxes
             for box in hot_windows:
                 # Add += 1 for all pixels inside each bbox
@@ -642,7 +660,7 @@ class VehicleDetection:
             window_img = self.draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
             images_processed.append( [window_img] )
             
-            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, prev_hot_windows=[], threshold=self.heatmap_threshold, get_heatmap=True)
+            bboxes, heatmap = self.get_bboxes(draw_image, hot_windows, threshold=self.heatmap_threshold, get_heatmap=True)
             
             window_img = heatmap             
             images_processed.append( [window_img, 'hot'] )            
@@ -662,9 +680,16 @@ class VehicleDetection:
                                                       self.spatial_size, self.hist_bins,
                                                       self.spatial_feat, self.hist_feat, self.hog_feat)
         
-        bboxes = self.get_bboxes(image, hot_windows, prev_hot_windows=self.prev_hot_windows, threshold=self.heatmap_threshold, get_heatmap=False)
-        self.prev_hot_windows = np.copy(hot_windows)
-
+        bboxes = self.get_bboxes(image, hot_windows, threshold=self.heatmap_threshold, get_heatmap=False)
+        
+        if len(bboxes)>0:
+            # 5th frame detection out of queue
+            if self.detection_history.full():
+                self.detection_history.get()
+                
+            # Put current frame detection to history    
+            self.detection_history.put(np.copy(bboxes))
+        
         processed = self.draw_boxes(draw_image, bboxes, color=(0, 255, 0), thick=6)   
 
         return processed
