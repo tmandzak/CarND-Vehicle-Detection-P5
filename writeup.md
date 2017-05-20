@@ -37,9 +37,34 @@ You're reading it!
 The code for this step is contained in `get_hog_features()` method (**lines 232 - 245**). The method is implemented in such a way
 that number of returned HOG layers corresponds the number of input image layers.
 When `ravel` parameter of the method equals `True` HOG features will be returned as a single vector, otherwise as a list of vectors per each of the layers.
-`get_hog_features()` method is called in **line 292** of a `single_img_features()` method  responsible for extracting features from a single image (**lines 272 - 297**). Before an image is passed to `get_hog_features()` method it's converted to a specified color space by `convert_color()` method (**line 278**) defined in **lines 109 - 154**
 
-I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
+`get_hog_features()` method is called in **line 292** of a `single_img_features()` method  responsible for extracting features from a single image (**lines 272 - 297**). Before an image is passed to `get_hog_features()` method it's converted to a specified color space by `convert_color()` method (**line 278**) defined in **lines 109 - 154**.
+
+To choose the color space I've trained the classifier on the `vehicle` and `non-vehicle` images provided for the project applying various conversions and computing test accuracies (**cells 2 - 4**) along with feature vector length. For this experiment I've set
+the input parameters to values met in lessons: 
+
+```
+orient = 9,  # HOG orientations
+pix_per_cell = 8, # HOG pixels per cell
+cell_per_block = 2, # HOG cells per block
+spatial_size = (32, 32), # Spatial binning dimensions
+hist_bins = 32    # Number of histogram bins
+```
+
+| Color space | Accuracy | # of Features |
+| --- | --- | --- |
+| RGB |	0.9718	| 8460 |
+| HSV |	0.9842 |	8460 |
+| LUV |	0.9887 |	8460 |
+| HLS |	0.9769 |	8460 |
+| YUV |	0.9876 |	8460 |
+| YCrCb |	0.9904 |	8460 |
+| H(LS) |	0.9645 |	5640 |
+| H(S)V |	0.9398 |	2820 |
+| (L)UV |	0.9437 |	2820 |
+
+
+
 
 ![alt text][image1]
 
