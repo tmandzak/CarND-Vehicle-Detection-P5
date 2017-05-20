@@ -102,7 +102,19 @@ Here is an example using the `YCrCb` color space and HOG parameters of `orientat
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+I trained a linear SVM calling ```train()``` method (**cell 4**) defined in **lines 397 - 453**. Following constructor parameters are responsible for using or not spatial, histogram and HOG sets of features:
+
+```
+spatial_feat = True, # Spatial features on or off
+hist_feat = True, # Histogram features on or off
+hog_feat = True # HOG features on or off
+```
+Lines **409 - 419** are responsible for feature extraction by calling the ```extract_features()``` method defined in lines **300 - 318**. This method was refactored to reuse code of ```single_img_features()``` (**lines 272 - 297**). In order to overcome PNG / JPEG scaling issue, folowing line of code was used to always read images in 0..255 scale (**line 309**):
+```
+image = cv2.cvtColor(cv2.imread(file), cv2.COLOR_BGR2RGB)
+```
+
+
 
 ### Sliding Window Search
 
