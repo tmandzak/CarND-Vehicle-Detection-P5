@@ -40,7 +40,9 @@ When `ravel` parameter of the method equals `True` HOG features will be returned
 
 `get_hog_features()` method is called in **line 292** of a `single_img_features()` method  responsible for extracting features from a single image (**lines 272 - 297**). Before an image is passed to `get_hog_features()` method it's converted to a specified color space by `convert_color()` method (**line 278**) defined in **lines 109 - 154**.
 
-To choose the color space I've trained the classifier on the `vehicle` and `non-vehicle` images provided for the project applying various conversions and computing test accuracies (**cells 2 - 4**) along with feature vector length. For this experiment I've set
+#### 2. Explain how you settled on your final choice of HOG parameters.
+
+To choose the color space I've trained the classifier on the `vehicle` and `non-vehicle` images provided for the project applying various conversions and computing test accuracies (**cells 2 - 4**) along with feature vector length. Aa a starting point I've set
 the input parameters to values met in lessons: 
 
 ```
@@ -81,7 +83,7 @@ Since YCrCb let achieve the highest accuracy I've chosen it for image conversion
 | 10	| 16	| 2	| 9	| 8	| 32	| 0.9859	| 1260 |
 | 11	| 16	| 2	| 9	| 8	| 16	| 0.9831	| 1212 |
 
-As it can be seen from experiments 1 and 10 increasing `pix_per_cell` to 16 and decreasing `spatial_size` to 8 let us reduce length of the feature vector from 8460 to 1260, while the accuracy only reduced from 0.9904 to 0.9859.
+As it can be seen from experiments 1 and 10 increasing `pix_per_cell` to 16 and decreasing `spatial_size` to 8 let reduce length of the feature vector from 8460 to 1260, while the accuracy only reduces from 0.9904 to 0.9859.
 
 Finally set of input parameters looks like below (see **lines 23 - 28**):
 
@@ -91,25 +93,12 @@ spatial_size = (8, 8), # Spatial binning dimensions
 hist_bins = 32,    # Number of histogram bins
 orient = 9,  # HOG orientations
 pix_per_cell = 16, # HOG pixels per cell
-cell_per_block = 2, # HOG cells per block
+cell_per_block = 2 # HOG cells per block
  ```
 
-
-
-
+Here is an example using the `YCrCb` color space and HOG parameters of `orientations=9`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
 
 ![alt text][image1]
-
-I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
-
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
-
-
-![alt text][image2]
-
-#### 2. Explain how you settled on your final choice of HOG parameters.
-
-I tried various combinations of parameters and...
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
@@ -121,6 +110,7 @@ I trained a linear SVM using...
 
 I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
 
+![alt text][image2]
 ![alt text][image3]
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
